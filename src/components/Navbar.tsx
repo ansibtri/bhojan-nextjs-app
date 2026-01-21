@@ -1,62 +1,101 @@
 "use client";
 import { JSX, useRef } from "react";
 import Link from "next/link";
-import { Button } from "./Button";
 import Image from "next/image";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+// 1. Import SplitText (Ensure you have installed/configured it)
+import { SplitText } from "gsap/SplitText"; 
 
-gsap.registerPlugin(useGSAP);
+// 2. Register both plugins
+gsap.registerPlugin(useGSAP, SplitText);
 
 export default function Navbar(): JSX.Element {
-    // animating navbar
     const navRef = useRef<HTMLElement>(null);
-    const logoRef = useRef<HTMLDivElement>(null);
-    // const 
-    useGSAP(() => {
+
+    const { contextSafe } = useGSAP(() => {
+        // --- Entrance Animation (Original) ---
         const nav_timeline = gsap.timeline();
         
-        nav_timeline.from(navRef.current, {
-            opacity: 0,
-            duration: .4,
-            delay: 0.1,
-        }
-        );
+        nav_timeline.from(navRef.current, { opacity: 0, duration: 0.4, delay: 0.1 });
+        nav_timeline.from("#logo", { opacity: 0, scale: 0, duration: 0.5, delay: 0.2 });
+        nav_timeline.from("#nav_links li", { opacity: 0, y: -20, duration: 0.5, delay: 0.2, stagger: 0.2 });
 
-        nav_timeline.from("#logo", {
-            opacity: 0,
-            scale: 0,
-            duration: .5,
-            delay: .2,
-        })
+        // --- SplitText Setup ---
+        // We target the class .nav-text inside our scope
+        const split = new SplitText(".nav-text", { type: "chars", charsClass: "char" });
 
-        nav_timeline.from("#nav_links li",{
-            opacity: 0,
-            y:-20,
-            duration: 0.5,
-            delay: 0.2,
-            stagger: 0.2,
-        })
-    }, {scope: navRef});
+        // React Cleanup: Revert the split when component unmounts
+        return () => {
+            split.revert();
+        };
+    }, { scope: navRef });
+
+    // --- Hover Handlers ---
+    const onEnter = contextSafe((e: React.MouseEvent<HTMLLIElement>) => {
+        // Find the characters inside the hovered element
+        const chars = e.currentTarget.querySelectorAll(".char");
+        
+        // Animate the characters (Wave effect)
+        gsap.to(chars, {
+            y: -5,
+            stagger: 0.05,
+            color: "#666", // Optional color change
+            duration: 0.3,
+            ease: "back.out(1.7)"
+        });
+    });
+
+    const onLeave = contextSafe((e: React.MouseEvent<HTMLLIElement>) => {
+        const chars = e.currentTarget.querySelectorAll(".char");
+        console.log(chars);
+        // Reset characters
+        gsap.to(chars, {
+            y: 0,
+            stagger: 0.05,
+            color: "black",
+            duration: 0.3,
+            ease: "power1.out"
+        });
+    });
+
     return (
         <nav className="block" ref={navRef}>
-            <div className="py-1 px-4  flex justify-between items-center">
+            <div className="py-1 px-4 flex justify-between items-center">
                 <div id="logo">
-                    <Image src="/original_logo_nobg.png" alt="Logo" width="150" height="100" className="object-fill" />
+                    <Link href="/">
+                        <Image src="/original_logo_nobg.png" alt="Logo" width="150" height="100" className="object-fill" />
+                    </Link>
                 </div>
+                
                 <ul id="nav_links" className="flex justify-between align-middle gap-4">
-                    <li></li>
-                    <li></li>
-                    <li className=""><Link href="/" className="  px-2 text-black font-bold cursor-pointer">Home</Link></li>
-                    <li className=""><Link href="/about" className=" px-2  text-black font-bold cursor-pointer">About</Link></li>
-                    <li className=""><Link href="/contact" className=" px-2  text-black font-bold cursor-pointer">Contact</Link></li>
-                    <li className=""><Link href="/services" className=" px-2  text-black font-bold cursor-pointer">Services</Link></li>
+                    {/* Add onEnter/onLeave and the 'nav-text' class to the text container */}
+                    
+                    <li onMouseEnter={onEnter} onMouseLeave={onLeave}>
+                        <Link href="/" className="px-2 text-black font-bold cursor-pointer inline-block">
+                            <span className="nav-text">Home</span>
+                        </Link>
+                    </li>
+                    
+                    <li onMouseEnter={onEnter} onMouseLeave={onLeave}>
+                        <Link href="/about" className="px-2 text-black font-bold cursor-pointer inline-block">
+                            <span className="nav-text">About</span>
+                        </Link>
+                    </li>
+                    
+                    <li onMouseEnter={onEnter} onMouseLeave={onLeave}>
+                        <Link href="/contact" className="px-2 text-black font-bold cursor-pointer inline-block">
+                            <span className="nav-text">Contact</span>
+                        </Link>
+                    </li>
+                    
+                    <li onMouseEnter={onEnter} onMouseLeave={onLeave}>
+                        <Link href="/services" className="px-2 text-black font-bold cursor-pointer inline-block">
+                            <span className="nav-text">Services</span>
+                        </Link>
+                    </li>
                 </ul>
-                {/* <div className="flex justify-between align-middle gap-3">
-                    <Button title="Login" className="px-8 py-2 rounded-full text-black bg-white cursor-pointer hover:bg-black hover:text-white transition delay-75 duration-500 ease-in-out hover:border-white " />
-                    <Button title="Register" className="px-8 py-2 rounded-full text-white bg-black cursor-pointer hover:bg-white hover:text-black border-black border-2 transition delay-75 duration-500 ease-in-out hover:border-white " />
-                </div> */}
             </div>
         </nav>
-    )
+    );
 }
